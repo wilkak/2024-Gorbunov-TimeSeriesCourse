@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 from sklearn.cluster import AgglomerativeClustering
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram, linkage
 from typing_extensions import Self
+
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -66,9 +67,47 @@ class TimeSeriesHierarchicalClustering:
         self: the fitted model
         """
 
-       # INSERT YOUR CODE
+      
+        
+
+        self.model = AgglomerativeClustering(n_clusters=self.n_clusters, metric='precomputed', linkage=self.method)
+        self.labels_ = self.model.fit_predict(distance_matrix)  # Сохранение меток кластеров
+        
+
+        self.linkage_matrix = linkage(distance_matrix, method=self.method)
 
         return self
+    
+    
+
+    def _create_linkage_matrix(self) -> np.ndarray:
+        """
+        Build the linkage matrix
+
+        Returns
+        -------
+        linkage matrix: linkage matrix
+        """
+        counts = np.zeros(self.model.children_.shape[0])
+        n_samples = len(self.model.labels_)
+
+        for i, merge in enumerate(self.model.children_):
+            current_count = 0
+            for child_idx in merge:
+                if child_idx < n_samples:
+                    current_count += 1  # leaf node
+                else:
+                    current_count += counts[child_idx - n_samples]
+            counts[i] = current_count
+
+        # Проверяем, есть ли distances_ и используем подходящее значение
+        if hasattr(self.model, 'distances_'):
+            distances = self.model.distances_
+        else:
+            distances = np.zeros(self.model.children_.shape[0])  # Если distances_ отсутствует, используем нули
+
+        linkage_matrix = np.column_stack([self.model.children_, distances, counts]).astype(float)
+        return linkage_matrix
 
 
     def fit_predict(self, distance_matrix: np.ndarray) -> np.ndarray:
@@ -152,6 +191,6 @@ class TimeSeriesHierarchicalClustering:
         plt.ylabel("Cluster")
         plt.title(title, fontsize=16, weight='bold')
 
-        ddata = dendrogram(self.linkage_matrix, orientation="left", color_threshold=sorted(self.model.distances_)[-2], show_leaf_counts=True)
+        ddata = dendrogram(self.linkage_matrix, orientation="left", color_threshold=None, show_leaf_counts=True)
 
         self._draw_timeseries_allclust(df, labels, ddata["leaves"], gs, ts_hspace)

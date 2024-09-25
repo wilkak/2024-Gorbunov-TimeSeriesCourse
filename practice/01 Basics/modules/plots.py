@@ -53,4 +53,4 @@ def plot_ts(ts_set: np.ndarray, plot_title: str = 'Input Time Series Set'):
                       height=400
                       )
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")

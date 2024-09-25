@@ -49,7 +49,12 @@ class PairwiseDistance:
 
         dist_func = None
 
-        # INSERT YOUR CODE
+        if self.metric == 'euclidean':
+            dist_func = ED_distance
+        elif self.metric == 'dtw':
+            dist_func = DTW_distance
+        else:
+            raise ValueError(f"Unknown metric: {self.metric}")
 
         return dist_func
 
@@ -66,9 +71,20 @@ class PairwiseDistance:
         matrix_values: distance matrix
         """
         
+        
+        # Выбираем функцию расстояния
+        dist_func = self._choose_distance()
         matrix_shape = (input_data.shape[0], input_data.shape[0])
         matrix_values = np.zeros(shape=matrix_shape)
-        
-        # INSERT YOUR CODE
+        # Вычисляем только верхний треугольник матрицы
+        for i in range(input_data.shape[0]):
+            for j in range(i, input_data.shape[0]):
+                if i == j:
+                    matrix_values[i, j] = 0  # Расстояние между серией и собой
+                else:
+                    dist = dist_func(input_data[i], input_data[j])
+                    matrix_values[i, j] = dist
+                    matrix_values[j, i] = dist  # Симметричное заполнение
+
 
         return matrix_values
