@@ -2,6 +2,7 @@ import numpy as np
 
 from modules.metrics import *
 from modules.utils import z_normalize
+from modules.metrics import ED_distance, DTW_distance
 
 
 default_metrics_params = {'euclidean': {'normalize': True},
@@ -29,7 +30,7 @@ class TimeSeriesKNN:
             self.metric_params.update(metric_params)
 
 
-    def fit(self, X_train: np.ndarray, Y_train: np.ndarray) -> Self:
+    def fit(self, X_train: np.ndarray, Y_train: np.ndarray) -> 'TimeSeriesKNN':
         """
         Fit the model using X_train as training data and Y_train as labels
 
@@ -63,9 +64,16 @@ class TimeSeriesKNN:
         dist: distance between the train and test samples
         """
 
-        dist = 0
+        if self.metric_params['normalize']:
+            x_train = z_normalize(x_train)
+            x_test = z_normalize(x_test)
 
-        # INSERT YOUR CODE
+        if self.metric == 'euclidean':
+            dist = ED_distance(x_train, x_test)
+        elif self.metric == 'dtw':
+            dist = DTW_distance(x_train, x_test, r=self.metric_params['r'])
+        else:
+            raise ValueError(f"Unknown metric: {self.metric}")
 
         return dist
 
@@ -82,11 +90,9 @@ class TimeSeriesKNN:
         -------
         neighbors: k nearest neighbors (distance between neighbor and test sample, neighbor label) for test sample
         """
-
-        neighbors = []
-
-        # INSERT YOUR CODE
-
+        
+        distances = [(self._distance(x_train, x_test), label) for x_train, label in zip(self.X_train, self.Y_train)]
+        neighbors = sorted(distances, key=lambda x: x[0])[:self.n_neighbors]
         return neighbors
 
 
@@ -104,9 +110,10 @@ class TimeSeriesKNN:
         """
 
         y_pred = []
-
-        # INSERT YOUR CODE
-
+        for x_test in X_test:
+            neighbors = self._find_neighbors(x_test)
+            labels = [label for _, label in neighbors]
+            y_pred.append(max(set(labels), key=labels.count))
         return np.array(y_pred)
 
 
@@ -123,11 +130,12 @@ def calculate_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     score: accuracy classification score
     """
+    score = np.mean(y_true == y_pred)
 
-    score = 0
-    for i in range(len(y_true)):
-        if (y_pred[i] == y_true[i]):
-            score = score + 1
-    score = score/len(y_true)
+    # score = 0
+    # for i in range(len(y_true)):
+    #     if (y_pred[i] == y_true[i]):
+    #         score = score + 1
+    # score = score/len(y_true)
 
     return score

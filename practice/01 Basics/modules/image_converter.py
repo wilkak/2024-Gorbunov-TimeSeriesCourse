@@ -3,7 +3,7 @@ import pandas as pd
 import math
 import cv2
 import imutils
-from google.colab.patches import cv2_imshow
+# from google.colab.patches import cv2_imshow
 
 
 class Image2TimeSeries:
@@ -32,8 +32,23 @@ class Image2TimeSeries:
         prep_img: image after preprocessing
         """
 
-        # INSERT YOUR CODE
-
+        # Шаг 2: Инверсия изображения
+        inverted_img = cv2.bitwise_not(img)
+        
+        # Шаг 3: Размытие изображения
+        blurred_img = cv2.GaussianBlur(inverted_img, (5, 5), 0)
+        
+        # Шаг 4: Бинаризация изображения
+        _, binary_img = cv2.threshold(blurred_img, 127, 255, cv2.THRESH_BINARY)
+        
+        # Шаг 5: Морфологические операции
+        kernel = np.ones((5, 5), np.uint8)
+        eroded_img = cv2.erode(binary_img, kernel, iterations=1)
+        dilated_img = cv2.dilate(eroded_img, kernel, iterations=1)
+        
+        # Шаг 6: Медианная фильтрация
+        prep_img = cv2.medianBlur(dilated_img, 5)
+        
         return prep_img
 
 
@@ -50,6 +65,9 @@ class Image2TimeSeries:
         contour: object contour
         """
 
+        if len(img.shape) >= 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        print(img.shape)
         contours, hierarchy = cv2.findContours(img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contour = [cnt for cnt in contours if cv2.contourArea(cnt) > 500][0]
 
@@ -164,7 +182,7 @@ class Image2TimeSeries:
         for i in range(len(edge_coordinates)):
             cv2.drawContours(img, np.array([[center, edge_coordinates[i]]]), -1, (255, 0, 255), 4)
 
-        cv2_imshow(imutils.resize(img, width=200))
+        cv2.imshow('Image', imutils.resize(img, width=200))
 
 
     def convert(self, img: np.ndarray, is_visualize: bool = False) -> np.ndarray:

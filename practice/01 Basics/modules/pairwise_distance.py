@@ -47,16 +47,14 @@ class PairwiseDistance:
         dict_func: function reference
         """
 
-        dist_func = None
-
         if self.metric == 'euclidean':
-            dist_func = ED_distance
+            return ED_distance
+        elif self.metric == 'norm_euclidean':
+            return norm_ED_distance
         elif self.metric == 'dtw':
-            dist_func = DTW_distance
+            return DTW_distance
         else:
-            raise ValueError(f"Unknown metric: {self.metric}")
-
-        return dist_func
+            raise ValueError("Unsupported metric. Choose 'euclidean', 'norm_euclidean' or 'dtw'.")
 
 
     def calculate(self, input_data: np.ndarray) -> np.ndarray:
@@ -71,20 +69,17 @@ class PairwiseDistance:
         matrix_values: distance matrix
         """
         
+        if self.is_normalize and self.metric != 'norm_euclidean':
+            input_data = np.array([z_normalize(ts) for ts in input_data])
         
-        # Выбираем функцию расстояния
         dist_func = self._choose_distance()
         matrix_shape = (input_data.shape[0], input_data.shape[0])
         matrix_values = np.zeros(shape=matrix_shape)
-        # Вычисляем только верхний треугольник матрицы
+        
         for i in range(input_data.shape[0]):
             for j in range(i, input_data.shape[0]):
-                if i == j:
-                    matrix_values[i, j] = 0  # Расстояние между серией и собой
-                else:
-                    dist = dist_func(input_data[i], input_data[j])
-                    matrix_values[i, j] = dist
-                    matrix_values[j, i] = dist  # Симметричное заполнение
-
-
+                distance = dist_func(input_data[i], input_data[j])
+                matrix_values[i, j] = distance
+                matrix_values[j, i] = distance
+        
         return matrix_values
