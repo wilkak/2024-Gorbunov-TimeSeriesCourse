@@ -188,7 +188,6 @@ def calculate_speedup(base_algorithm_times: np.ndarray, improved_algorithms_time
 
     return speedup
 
-
 def visualize_table_speedup(speedup_data: np.ndarray, table_index: list, table_columns: list, table_caption: str) -> None:
     """
     Visualize the table with speedup
@@ -203,26 +202,28 @@ def visualize_table_speedup(speedup_data: np.ndarray, table_index: list, table_c
 
     df = pd.DataFrame(data=speedup_data, index=table_index, columns=table_columns)
 
-    def style_negative(value, props=''):
-        return props if value < 1 else None
+    def style_negative(value):
+        return 'color: red;' if value < 1 else ''
 
-    def style_positive(value, props=''):
-        return props if value >= 1 else None
+    def style_positive(value):
+        return 'color: green;' if value >= 1 else ''
 
-    style_df = df.style.map(style_negative, props='color: red;')\
-                .map(style_positive, props='color: green;')\
-                .set_properties(**{'border': '1px black solid !important', 'text-align': 'center'})\
-                .set_table_styles([{
-                    'selector': 'th',
-                    'props': [('border','1px black solid !important'), ('text-align', 'center')]
-                    },
-                    {'selector': 'caption',
-                    'props': [('font-size', '16px'),
-                                ('font-weight', 'bold'),
-                                ('padding', '10px 0px 10px 0px')
-                            ]
-                    }
-                ])\
-                .set_caption(table_caption)
+    style_df = df.style.applymap(style_negative)\
+                       .applymap(style_positive)\
+                       .set_properties(**{'border': '1px black solid !important', 'text-align': 'center'})\
+                       .set_table_styles([{
+                           'selector': 'th',
+                           'props': [('border','1px black solid !important'), ('text-align', 'center')]
+                           },
+                           {'selector': 'caption',
+                            'props': [('font-size', '16px'),
+                                      ('font-weight', 'bold'),
+                                      ('padding', '10px 0px 10px 0px')]
+                           }
+                       ])\
+                       .set_caption(table_caption)
 
     display(style_df)
+
+
+

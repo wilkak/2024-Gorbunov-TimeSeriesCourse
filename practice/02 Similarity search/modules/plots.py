@@ -51,10 +51,11 @@ def plot_ts_set(ts_set: np.ndarray, title: str = 'Input Time Series Set') -> Non
                       legend=dict(font=dict(size=20, color='black'))
                       )
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")
 
 
-def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str = None, y_title: str = None, trace_titles: np.ndarray = None) -> None:
+
+def mplot2d(x: np.ndarray, y: np.ndarray, plot_title: str = None, x_title: str = None, y_title: str = None, trace_titles: np.ndarray = None) -> None:
     """
     Multiple 2D Plots on figure for different experiments
 
@@ -100,10 +101,11 @@ def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str
                       height=600
                       )
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")
 
 
-def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
+
+def plot_bestmatch_data(ts: np.ndarray, query: np.ndarray) -> None:
     """
     Visualize the input data (time series and query) for the best match task
 
@@ -146,24 +148,72 @@ def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
                       showlegend=False,
                       title_x=0.5)
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")
 
 
-def plot_bestmatch_results(ts: np.ndarrray, query: np.ndarrray, bestmatch_results: dict) -> None:
+
+
+def plot_bestmatch_results(ts: np.ndarray, query: np.ndarray, bestmatch_results: dict) -> None:
     """
-    Visualize the best match results
+    Visualize the best match results by overlaying found subsequences on the time series.
 
     Parameters
     ----------
-    ts: time series
-    query: query
-    bestmatch_results: output data found by the best match algorithm
+    ts: time series (np.ndarray)
+    query: query (np.ndarray)
+    bestmatch_results: output data found by the best match algorithm (dict)
     """
+    query_len = query.shape[0]
+    ts_len = ts.shape[0]
 
-    # INSERT YOUR CODE
+    # Извлечение индексов и расстояний лучших совпадений
+    best_match_indices = bestmatch_results['indices']
+    best_match_distances = bestmatch_results['distances']
+
+    # Создаем subplot для отображения временного ряда и лучших совпадений
+    fig = make_subplots(
+        rows=1, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+        subplot_titles=("Time Series with Best Matches")
+    )
+
+    # Визуализация временного ряда
+    fig.add_trace(
+        go.Scatter(x=np.arange(ts_len), y=ts, line=dict(color='blue'), name="Time Series"),
+        row=1, col=1
+    )
+
+    # Цвета для отображения лучших совпадений
+    colors = ['green', 'orange', 'purple']
+
+    # Визуализация лучших совпадений на графике временного ряда
+    for i, best_match_index in enumerate(best_match_indices):
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(best_match_index, best_match_index + query_len),
+                y=ts[best_match_index:best_match_index + query_len],
+                line=dict(color=colors[i % len(colors)], width=4, dash='dash'),
+                name=f"Best Match {i+1} (Dist: {best_match_distances[i]:.3f})"
+            ),
+            row=1, col=1
+        )
+
+    # Настройка осей и заголовков
+    fig.update_layout(
+        title="Best Match Results Overlay on Time Series", height=600,
+        xaxis_title="Time", yaxis_title="Amplitude"
+    )
+
+    # Обновляем оси
+    fig.update_xaxes(title_text="Time", row=1, col=1)
+    fig.update_yaxes(title_text="Amplitude", row=1, col=1)
+
+    # Отображаем график
+    fig.show()
 
 
-def pie_chart(labels: np.ndarrray, values: np.ndarrray, plot_title='Pie chart') -> None:
+
+
+def pie_chart(labels: np.ndarray, values: np.ndarray, plot_title='Pie chart') -> None:
     """
     Build the pie chart
 
@@ -183,4 +233,5 @@ def pie_chart(labels: np.ndarrray, values: np.ndarrray, plot_title='Pie chart') 
                       height=500
                       )
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")
+
