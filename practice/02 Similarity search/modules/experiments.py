@@ -73,7 +73,7 @@ def _run_experiment_dist_profile(algorithm: str, data: dict, exp_params: dict, a
 
 def _run_experiment_best_match(algorithm: str, data: dict, exp_params: dict, alg_params: dict) -> np.ndarray:
     """
-    Run an experiment to measure the execution time of an best match algorithm
+    Run an experiment to measure the execution time of a best match algorithm
     
     Parameters
     ----------
@@ -99,10 +99,10 @@ def _run_experiment_best_match(algorithm: str, data: dict, exp_params: dict, alg
             for m in m_list:
                 match algorithm:
                     case 'naive':
-                        naive_bestmatch_model = NaiveBestMatchFinder(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['normalize'], r)
+                        naive_bestmatch_model = NaiveBestMatchFinder(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"naive_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
                     case 'ucr-dtw':
-                        ucr_dtw_bestmatch_model = UCR_DTW(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['normalize'], r)
+                        ucr_dtw_bestmatch_model = UCR_DTW(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"ucr_dtw_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
 
                 try:
@@ -115,6 +115,7 @@ def _run_experiment_best_match(algorithm: str, data: dict, exp_params: dict, alg
         times.append(r_times)
 
     return np.array(times)
+
 
 
 def run_experiment(algorithm: str, task: str, data: dict, exp_params: dict, alg_params: dict = None) -> np.ndarray:

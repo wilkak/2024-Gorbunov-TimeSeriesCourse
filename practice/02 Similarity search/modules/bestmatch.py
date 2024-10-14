@@ -127,34 +127,52 @@ class NaiveBestMatchFinder(BestMatchFinder):
 
     def perform(self, ts_data: np.ndarray, query: np.ndarray) -> dict:
         """
-        Search subsequences in a time series that most closely match the query using the naive algorithm
+        Поиск подпоследовательностей в временном ряде, которые наиболее близко соответствуют запросу с использованием наивного алгоритма
         
-        Parameters
+        Параметры
         ----------
-        ts_data: time series
-        query: query, shorter than time series
+        ts_data: временной ряд
+        query: запрос, короче временного ряда
 
-        Returns
+        Возвращает
         -------
-        best_match: dictionary containing results of the naive algorithm
+        best_match: словарь, содержащий результаты наивного алгоритма
         """
 
+        # Создаем копию запроса
         query = copy.deepcopy(query)
-        if (len(ts_data.shape) != 2): # time series set
+
+        # Если временной ряд не двумерный, преобразуем его в двумерный с помощью скользящего окна
+        if (len(ts_data.shape) != 2):
             ts_data = sliding_window(ts_data, len(query))
 
-        N, m = ts_data.shape
-        excl_zone = self._calculate_excl_zone(m)
+        N, m = ts_data.shape  # N - количество подстрок, m - длина запроса
+        excl_zone = self._calculate_excl_zone(m)  # Вычисляем размер исключающей зоны
 
-        dist_profile = np.ones((N,))*np.inf
-        bsf = np.inf
-
+        # Инициализируем профиль расстояний
+        dist_profile = np.ones((N,)) * np.inf
         bestmatch = {
-            'index' : [],
-            'distance' : []
+            'index': [],
+            'distance': []
         }
-        
-        # INSERT YOUR CODE
+
+        # Проходим по каждому началу подпоследовательности
+        for start in range(N):
+            if start + m <= N:  # Убедимся, что подпоследовательность помещается в временной ряд
+                subsequence = ts_data[start]  # Извлекаем текущую подпоследовательность
+
+                # Вычисляем расстояние DTW между запросом и текущей подпоследовательностью
+                distance = DTW_distance(query, subsequence)
+
+                # Обновляем профиль расстояний
+                dist_profile[start] = distance
+
+        # Используем функцию topK_match для получения лучших совпадений с учетом исключающей зоны
+        topK_results = topK_match(dist_profile, excl_zone, self.topK)
+
+        # Заполняем bestmatch с индексами и расстояниями
+        bestmatch['index'] = topK_results['indices']
+        bestmatch['distance'] = topK_results['distances']
 
         return bestmatch
 

@@ -52,36 +52,47 @@ def norm_ED_distance(ts1: np.ndarray, ts2: np.ndarray) -> float:
 
 def DTW_distance(ts1: np.ndarray, ts2: np.ndarray, r: float = 1) -> float:
     """
-    Calculate DTW distance
+    Вычисление расстояния DTW с учетом полосы Сако-Чиба.
 
-    Parameters
+    Параметры
     ----------
-    ts1: first time series
-    ts2: second time series
-    r: warping window size
+    ts1: первый временной ряд
+    ts2: второй временной ряд
+    r: размер полосы искажения как доля от длины временных рядов
     
-    Returns
+    Возвращает
     -------
-    dtw_dist: DTW distance between ts1 and ts2
+    dtw_dist: расстояние DTW между ts1 и ts2
     """
 
     n = len(ts1)
     m = len(ts2)
-    
-    # Initialize the cost matrix
+
+    # Инициализация матрицы затрат
     dtw_matrix = np.full((n + 1, m + 1), np.inf)
     dtw_matrix[0, 0] = 0
-    
-    # Apply the warping window size
-    window = max(int(r * max(n, m)), 1)
-    
+
+    # Применение размера полосы искажения
+    window = max(int(r * max(n, m)), 0)
+
     for i in range(1, n + 1):
-        for j in range(max(1, i - window), min(m + 1, i + window)):
-            cost = (ts1[i - 1] - ts2[j - 1]) ** 2
-            dtw_matrix[i, j] = cost + min(
-                dtw_matrix[i - 1, j],      # insertion
-                dtw_matrix[i, j - 1],      # deletion
-                dtw_matrix[i - 1, j - 1]   # match
-            )
-    
+        # Определяем диапазон j на основе полосы Сако-Чиба
+        if window == 0:  # Если r = 0, сравниваем только диагональные элементы
+            j = i
+            if j <= m:
+                cost = (ts1[i - 1] - ts2[j - 1]) ** 2
+                dtw_matrix[i, j] = cost + dtw_matrix[i - 1, j - 1]
+        else:
+            start_j = max(1, i - window)
+            end_j = min(m + 1, i + window)
+
+            for j in range(start_j, end_j):
+                cost = (ts1[i - 1] - ts2[j - 1]) ** 2  # Вычисление стоимости
+                dtw_matrix[i, j] = cost + min(
+                    dtw_matrix[i - 1, j],      # вставка
+                    dtw_matrix[i, j - 1],      # удаление
+                    dtw_matrix[i - 1, j - 1]   # совпадение
+                )
+
+    # Возвращаем без взятия корня, чтобы сравнить с функцией из sktime
     return dtw_matrix[n, m]
