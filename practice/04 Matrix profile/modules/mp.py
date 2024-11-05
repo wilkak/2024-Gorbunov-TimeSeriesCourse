@@ -5,6 +5,8 @@ import math
 import stumpy
 from stumpy import config
 
+import numpy as np
+import stumpy
 
 def compute_mp(ts1: np.ndarray, m: int, exclusion_zone: int = None, ts2: np.ndarray = None):
     """
@@ -23,11 +25,17 @@ def compute_mp(ts1: np.ndarray, m: int, exclusion_zone: int = None, ts2: np.ndar
             (matrix profile, matrix profile index, subsequence length, exclusion zone, the first and second time series)
     """
     
-    # INSERT YOUR CODE
+  
+     # Вычисляем матричный профиль: если ts2 не указан, используем ts1 для self-join
+    if ts2 is None:
+        mp_result = stumpy.stump(ts1, m)
+    else:
+        mp_result = stumpy.stump(ts1, m, T_B=ts2)
 
-    return {'mp': mp[:, 0],
-            'mpi': mp[:, 1],
-            'm' : m,
-            'excl_zone': exclusion_zone,
-            'data': {'ts1' : ts1, 'ts2' : ts2}
-            }
+    # Возвращаем структуру с результатами
+    return {
+        'mp': mp_result[:, 0],          # Матричный профиль
+        'mpi': mp_result[:, 1].astype(int), # Индексы матричного профиля
+        'm': m,                         # Длина подпоследовательности
+        'data': {'ts1': ts1, 'ts2': ts2} # Данные временных рядов
+    }
