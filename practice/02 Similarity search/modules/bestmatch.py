@@ -217,7 +217,7 @@ class UCR_DTW(BestMatchFinder):
 
         lb_Kim = 0
         
-        # INSERT YOUR CODE
+        lb_Kim = (subs1[0] - subs2[0]) ** 2 + (subs1[-1] - subs2[-1]) ** 2
 
         return lb_Kim
 
@@ -239,7 +239,25 @@ class UCR_DTW(BestMatchFinder):
 
         lb_Keogh = 0
 
-        # INSERT YOUR CODE
+        n = len(subs1)
+        lb_Keogh = 0.0
+
+        # Compute the envelopes
+        u = np.zeros(n)
+        l = np.zeros(n)
+        for i in range(n):
+            window_start = max(0, i - r)
+            window_end = min(n, i + r + 1)
+            u[i] = max(subs1[window_start:window_end])
+            l[i] = min(subs1[window_start:window_end])
+
+        # Calculate LB_Keogh as the sum of squared differences for points outside the envelopes
+        for i in range(n):
+            if subs2[i] > u[i]:
+                lb_Keogh += (subs2[i] - u[i]) ** 2
+            elif subs2[i] < l[i]:
+                lb_Keogh += (subs2[i] - l[i]) ** 2
+
 
         return lb_Keogh
 
@@ -293,6 +311,29 @@ class UCR_DTW(BestMatchFinder):
             'distance' : []
         }
 
-        # INSERT YOUR CODE
+        for start in range(N):
+            subsequence = ts_data[start]
+        if self.is_normalize:
+            subsequence = z_normalize(subsequence)
+
+        # Apply lower bound LB_Kim
+        lb_Kim = self._LB_Kim(query, subsequence)
+        if lb_Kim < bsf:
+            # Apply lower bound LB_Keogh (QC)
+            lb_Keogh_QC = self._LB_Keogh(query, subsequence, self.r)
+            if lb_Keogh_QC < bsf:
+                # Apply lower bound LB_Keogh (CQ)
+                lb_Keogh_CQ = self._LB_Keogh(subsequence, query, self.r)
+                if lb_Keogh_CQ < bsf:
+                    # Calculate DTW distance
+                    distance = DTW_distance(query, subsequence)
+                    if distance < bsf:
+                        dist_profile[start] = distance
+                        bsf = distance
+
+        # Extract top-K matches
+        topK_results = topK_match(dist_profile, excl_zone, self.topK)
+        bestmatch['index'] = topK_results['indices']
+        bestmatch['distance'] = topK_results['distances']
 
         return bestmatch

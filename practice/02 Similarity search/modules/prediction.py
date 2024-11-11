@@ -56,17 +56,15 @@ class BestMatchPredictor:
         -------
         predict_values: prediction values
         """
+        if self.agg_func == 'average':
+            predict_values = topK_subs_predict_values.mean(axis=0).round()
+        elif self.agg_func == 'median':
+            predict_values = np.median(topK_subs_predict_values, axis=0).round()
+        else:
+            raise NotImplementedError
 
-        match self.agg_func:
-            case 'average':
-                predict_values = topK_subs_predict_values.mean(axis=0).round()
-            case 'median':
-                predict_values = topK_subs_predict_values.median(axis=0).round()
-            case _:
-                raise NotImplementedError
-        
         return predict_values
-
+        
 
     def predict(self, ts: np.ndarray, query: np.ndarray) -> np.array:
         """
