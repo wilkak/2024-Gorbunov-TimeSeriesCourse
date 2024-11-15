@@ -38,7 +38,7 @@ def heads_tails(consumptions: dict, cutoff, house_idx: list) -> Tuple[dict, dict
     return heads, tails
 
 
-def meter_swapping_detection(heads: dict, tails: dict, house_idx: dict, m: int) -> dict:
+def meter_swapping_detection(heads, tails, house_idx, m):
     """
     Find the swapped time series pair
 
@@ -53,15 +53,29 @@ def meter_swapping_detection(heads: dict, tails: dict, house_idx: dict, m: int) 
     --------
     min_score: time series pair with minimum swap-score
     """
+    min_score = float('inf')
+    best_pair = {'i': None, 'j': None, 'mp_j': None}
+    eps = 1e-8  
+    for i in house_idx:
+        for j in house_idx:
+            if i != j:
+               
+                head_i = heads[f'H_{i}'].values.flatten()
+                tail_j = tails[f'T_{j}'].values.flatten()
+                tail_i = tails[f'T_{i}'].values.flatten()
 
-    eps = 0.001
+                mp_ij = compute_mp(ts1=head_i, m=m, ts2=tail_j)
+                mp_ii = compute_mp(ts1=head_i, m=m, ts2=tail_i)
 
-    min_score = {}
+                score = np.min(mp_ij['mp']) / (np.min(mp_ii['mp']) + eps)
 
-    # INSERT YOUR CODE
-    
-    return min_score
+                if score < min_score:
+                    min_score = score
+                    best_pair['i'] = i
+                    best_pair['j'] = j
+                    best_pair['mp_j'] = mp_ij
 
+    return best_pair
 
 def plot_consumptions_ts(consumptions: dict, cutoff, house_idx: list):
     """
@@ -111,4 +125,4 @@ def plot_consumptions_ts(consumptions: dict, cutoff, house_idx: list):
                       legend=dict(font=dict(size=20, color='black'))
                       )
 
-    fig.show(renderer="colab")
+    fig.show(renderer="browser")

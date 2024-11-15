@@ -10,25 +10,12 @@ from modules.plots import mplot2d
 
 
 def _get_param_values(exp_params: dict, param: str) -> list:
-    """
-    Get experiment parameter values
-    
-    Parameters
-    ----------
-    exp_params: experiment parameters
-    param: parameter name
-    
-    Returns
-    -------
-    param_values: experiment parameter values
-    """
-
-    if (param in exp_params['fixed'].keys()):
+    if param in exp_params['fixed'].keys():
         param_values = [exp_params['fixed'][param]]
     else:
         param_values = exp_params['varying'][param]
-
     return param_values
+
 
 
 def _run_experiment_dist_profile(algorithm: str, data: dict, exp_params: dict, alg_params: dict) -> np.ndarray:
@@ -72,91 +59,45 @@ def _run_experiment_dist_profile(algorithm: str, data: dict, exp_params: dict, a
 
 
 def _run_experiment_best_match(algorithm: str, data: dict, exp_params: dict, alg_params: dict) -> np.ndarray:
-    """
-    Run an experiment to measure the execution time of a best match algorithm
-    
-    Parameters
-    ----------
-    algorithm: algorithm name
-    data: set of time series and queries
-    exp_params: experiment parameters
-    alg_params: algorithm parameters
-    
-    Returns
-    -------
-    times: execution times of algorithm
-    """
-    
     n_list = _get_param_values(exp_params, 'n')
     m_list = _get_param_values(exp_params, 'm')
     r_list = _get_param_values(exp_params, 'r')
-
     times = []
 
     for r in r_list:
         r_times = []
         for n in n_list:
             for m in m_list:
-                match algorithm:
-                    case 'naive':
+                try:
+                    if algorithm == 'naive':
                         naive_bestmatch_model = NaiveBestMatchFinder(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"naive_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
-                    case 'ucr-dtw':
+                    elif algorithm == 'ucr-dtw':
                         ucr_dtw_bestmatch_model = UCR_DTW(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"ucr_dtw_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
-
-                try:
+                    
+                    # Замер времени выполнения с выводом отладочной информации
+                    print(f"Running {algorithm} for n={n}, m={m}, r={r}")
                     time = timeit.timeit(stmt=runtime_code, number=1, globals={**globals(), **locals()})
-                except:
-                    time = np.nan
-
-                r_times.append(time)
-
+                    r_times.append(time)
+                except Exception as e:
+                    print(f"Error in {algorithm} for n={n}, m={m}, r={r}: {e}")
+                    r_times.append(np.nan)
+                    
         times.append(r_times)
-
     return np.array(times)
 
 
 
 def run_experiment(algorithm: str, task: str, data: dict, exp_params: dict, alg_params: dict = None) -> np.ndarray:
-    """
-    Run an experiment to measure the execution time of an algorithm
-    
-    Parameters
-    ----------
-    algorithm: algorithm name
-    task: the task that the algorithm performs
-    data: set of time series and queries
-    exp_params: experiment parameters
-    alg_params: algorithm parameters
-    
-    Returns
-    -------
-    times: execution times of algorithm
-    """
-    
-    if (task == "distance_profile"):
-        times = _run_experiment_dist_profile(algorithm, data, exp_params, alg_params)
-    elif (task == "best_match"):
+    if task == "best_match":
         times = _run_experiment_best_match(algorithm, data, exp_params, alg_params)
     else:
         raise NotImplementedError
-
     return times
 
-
 def visualize_plot_times(times: np.ndarray, comparison_param: np.ndarray, exp_params: dict) -> None:
-    """
-    Visualize plot with execution times
-    
-    Parameters
-    ----------
-    times: execution times of algorithms
-    comparison_param: name of comparison parameter
-    exp_params: experiment parameters
-    """
-
-    if ('n' in exp_params['varying'].keys()):
+    if 'n' in exp_params['varying'].keys():
         varying_param_name = 'Time series length'   
         varying_param_value = exp_params['varying']['n']
     else:
@@ -172,35 +113,9 @@ def visualize_plot_times(times: np.ndarray, comparison_param: np.ndarray, exp_pa
 
 
 def calculate_speedup(base_algorithm_times: np.ndarray, improved_algorithms_times: np.ndarray) -> np.ndarray:
-    """
-    Calculate speedup algorithms relative to the base algorithm by formula: speedup = base_algorithm_times/algorithms_times
-    
-    Parameters
-    ----------
-    base_algorithm_times: execution times of the base algorithm
-    algorithms_times: execution times of algorithms for which speedup is calculated
-    
-    Returns
-    -------
-    speedup: speedup algorithms relative to the base algorithm
-    """
-
-    speedup = base_algorithm_times/improved_algorithms_times
-
-    return speedup
+    return base_algorithm_times / improved_algorithms_times
 
 def visualize_table_speedup(speedup_data: np.ndarray, table_index: list, table_columns: list, table_caption: str) -> None:
-    """
-    Visualize the table with speedup
-    
-    Parameters
-    ----------
-    data: input data of table
-    table_index: index of table
-    table_columns: names of table columns
-    table_title: title of table
-    """
-
     df = pd.DataFrame(data=speedup_data, index=table_index, columns=table_columns)
 
     def style_negative(value):
@@ -209,7 +124,7 @@ def visualize_table_speedup(speedup_data: np.ndarray, table_index: list, table_c
     def style_positive(value):
         return 'color: green;' if value >= 1 else ''
 
-    style_df = df.style.applymap(style_negative)\
+     style_df = df.style.applymap(style_negative)\
                        .applymap(style_positive)\
                        .set_properties(**{'border': '1px black solid !important', 'text-align': 'center'})\
                        .set_table_styles([{
@@ -223,8 +138,6 @@ def visualize_table_speedup(speedup_data: np.ndarray, table_index: list, table_c
                            }
                        ])\
                        .set_caption(table_caption)
-
     display(style_df)
-
 
 
