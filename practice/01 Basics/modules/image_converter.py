@@ -5,6 +5,7 @@ import cv2
 import imutils
 # from google.colab.patches import cv2_imshow
 
+from typing import Union
 
 class Image2TimeSeries:
     """
@@ -17,7 +18,11 @@ class Image2TimeSeries:
     
     def __init__(self, angle_step: int = 10) -> None:
         self.angle_step: int = angle_step
-
+    
+    #def __init__(self, n_neighbors: int = 3, metric: str = 'euclidean', metric_params: Union[dict, None] = None) -> None:
+    #    self.n_neighbors: int = n_neighbors
+    #    self.metric: str = metric
+    #    self.metric_params: Union[dict, None] = metric_params
 
     def _img_preprocess(self, img: np.ndarray) -> np.ndarray:
         """
@@ -32,21 +37,21 @@ class Image2TimeSeries:
         prep_img: image after preprocessing
         """
 
-        # Шаг 2: Инверсия изображения
+        # Инверсия изображения
         inverted_img = cv2.bitwise_not(img)
         
-        # Шаг 3: Размытие изображения
+        # Размытие изображения
         blurred_img = cv2.GaussianBlur(inverted_img, (5, 5), 0)
         
-        # Шаг 4: Бинаризация изображения
+        # Бинаризация изображения
         _, binary_img = cv2.threshold(blurred_img, 127, 255, cv2.THRESH_BINARY)
         
-        # Шаг 5: Морфологические операции
+        # Морфологические операции
         kernel = np.ones((5, 5), np.uint8)
         eroded_img = cv2.erode(binary_img, kernel, iterations=1)
         dilated_img = cv2.dilate(eroded_img, kernel, iterations=1)
         
-        # Шаг 6: Медианная фильтрация
+        # Медианная фильтрация
         prep_img = cv2.medianBlur(dilated_img, 5)
         
         return prep_img
